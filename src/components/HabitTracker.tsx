@@ -73,19 +73,28 @@ function Slider({
   onChange: (v: number) => void;
   label: string;
 }) {
-  const bg = getScoreBg(value);
-  const track = getScoreTrack(value);
-
   return (
     <div className="space-y-1.5">
       <div className="flex justify-between items-center">
         <span className="text-sm text-foreground/60">{label}</span>
       </div>
       <div className="relative h-6 flex items-center">
-        <div className={`absolute inset-0 my-auto h-2 rounded-full ${track}`} />
         <div
-          className={`absolute left-0 my-auto h-2 rounded-full ${bg} transition-all`}
-          style={{ width: `${value}%`, top: "50%", transform: "translateY(-50%)" }}
+          className="absolute my-auto h-2 rounded-full"
+          style={{
+            left: 0, right: 0, top: "50%", transform: "translateY(-50%)",
+            background: "linear-gradient(to right, #f87171, #fbbf24, #34d399)",
+            opacity: 0.2,
+          }}
+        />
+        <div
+          className="absolute left-0 my-auto h-2 rounded-l-full transition-all"
+          style={{
+            width: `${value}%`, top: "50%", transform: "translateY(-50%)",
+            background: `linear-gradient(to right, #f87171, #fbbf24 50%, #34d399)`,
+            backgroundSize: `${10000 / Math.max(value, 1)}% 100%`,
+            borderRadius: value >= 99 ? "9999px" : "9999px 0 0 9999px",
+          }}
         />
         <input
           type="range"
@@ -337,6 +346,40 @@ function DayCard({
   );
 }
 
+// ─── Gradient slider (desktop) ───
+function GradientSlider({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+  return (
+    <div className="relative min-w-[120px] h-6 flex items-center">
+      <div
+        className="absolute my-auto h-2 rounded-full"
+        style={{
+          left: 0, right: 0, top: "50%", transform: "translateY(-50%)",
+          background: "linear-gradient(to right, #f87171, #fbbf24, #34d399)",
+          opacity: 0.2,
+        }}
+      />
+      <div
+        className="absolute left-0 my-auto h-2 rounded-l-full transition-all"
+        style={{
+          width: `${value}%`, top: "50%", transform: "translateY(-50%)",
+          background: `linear-gradient(to right, #f87171, #fbbf24 50%, #34d399)`,
+          backgroundSize: `${10000 / Math.max(value, 1)}% 100%`,
+          borderRadius: value >= 99 ? "9999px" : "9999px 0 0 9999px",
+        }}
+      />
+      <input
+        type="range"
+        min={0}
+        max={100}
+        value={value}
+        onChange={(e) => onChange(Number(e.target.value))}
+        className="relative z-10 w-full h-6 cursor-pointer color-slider"
+        style={{ background: "transparent", "--thumb-color": getThumbColor(value) } as React.CSSProperties}
+      />
+    </div>
+  );
+}
+
 // ─── Desktop table row ───
 function DayRow({
   data,
@@ -426,26 +469,6 @@ function DayRow({
         </button>
       </td>
 
-      {/* Food */}
-      <td className="px-2 py-2">
-        <div className="relative min-w-[120px] h-6 flex items-center">
-          <div className={`absolute inset-0 my-auto h-2 rounded-full ${getScoreTrack(data.food)}`} />
-          <div
-            className={`absolute left-0 my-auto h-2 rounded-full ${getScoreBg(data.food)} transition-all`}
-            style={{ width: `${data.food}%`, top: "50%", transform: "translateY(-50%)" }}
-          />
-          <input
-            type="range"
-            min={0}
-            max={100}
-            value={data.food}
-            onChange={(e) => onUpdate({ ...data, food: Number(e.target.value) })}
-            className="relative z-10 w-full h-6 cursor-pointer color-slider"
-            style={{ background: "transparent", "--thumb-color": getThumbColor(data.food) } as React.CSSProperties}
-          />
-        </div>
-      </td>
-
       {/* Sleep */}
       <td className="px-1 py-2">
         <input
@@ -467,51 +490,26 @@ function DayRow({
         {sleep !== null ? `${sleep.toFixed(1)}h` : "—"}
       </td>
 
+      {/* Food */}
+      <td className="px-2 py-2">
+        <GradientSlider value={data.food} onChange={(food) => onUpdate({ ...data, food })} />
+      </td>
+
       {/* Mood */}
       <td className="px-2 py-2">
-        <div className="relative min-w-[120px] h-6 flex items-center">
-          <div className={`absolute inset-0 my-auto h-2 rounded-full ${getScoreTrack(data.mood)}`} />
-          <div
-            className={`absolute left-0 my-auto h-2 rounded-full ${getScoreBg(data.mood)} transition-all`}
-            style={{ width: `${data.mood}%`, top: "50%", transform: "translateY(-50%)" }}
-          />
-          <input
-            type="range"
-            min={0}
-            max={100}
-            value={data.mood}
-            onChange={(e) => onUpdate({ ...data, mood: Number(e.target.value) })}
-            className="relative z-10 w-full h-6 cursor-pointer color-slider"
-            style={{ background: "transparent", "--thumb-color": getThumbColor(data.mood) } as React.CSSProperties}
-          />
-        </div>
+        <GradientSlider value={data.mood} onChange={(mood) => onUpdate({ ...data, mood })} />
       </td>
 
       {/* Work */}
       <td className="px-2 py-2">
-        <div className="relative min-w-[120px] h-6 flex items-center">
-          <div className={`absolute inset-0 my-auto h-2 rounded-full ${getScoreTrack(data.work)}`} />
-          <div
-            className={`absolute left-0 my-auto h-2 rounded-full ${getScoreBg(data.work)} transition-all`}
-            style={{ width: `${data.work}%`, top: "50%", transform: "translateY(-50%)" }}
-          />
-          <input
-            type="range"
-            min={0}
-            max={100}
-            value={data.work}
-            onChange={(e) => onUpdate({ ...data, work: Number(e.target.value) })}
-            className="relative z-10 w-full h-6 cursor-pointer color-slider"
-            style={{ background: "transparent", "--thumb-color": getThumbColor(data.work) } as React.CSSProperties}
-          />
-        </div>
+        <GradientSlider value={data.work} onChange={(work) => onUpdate({ ...data, work })} />
       </td>
     </tr>
   );
 }
 
 // ─── Month summary ───
-function MonthSummary({ days }: { days: DayData[] }) {
+function MonthSummary({ days, prevMonthBedtime }: { days: DayData[]; prevMonthBedtime: string }) {
   const totalPushups = days.reduce(
     (sum, d) => sum + d.pushups.reduce((a, b) => a + b, 0),
     0
@@ -537,8 +535,8 @@ function MonthSummary({ days }: { days: DayData[] }) {
   }
 
   const sleepDays: number[] = [];
-  for (let i = 1; i < days.length; i++) {
-    const prevBed = days[i - 1].bedtime;
+  for (let i = 0; i < days.length; i++) {
+    const prevBed = i === 0 ? prevMonthBedtime : days[i - 1].bedtime;
     const curWake = days[i].waketime;
     if (prevBed && curWake) {
       const h = calculateSleep(prevBed, curWake);
@@ -654,6 +652,13 @@ export default function HabitTracker() {
     days.forEach((date) => {
       map.set(date, loadDay(date));
     });
+    // Load last day of previous month for sleep calculation on day 1
+    const prevMonthYear = month === 0 ? year - 1 : year;
+    const prevMonthNum = month === 0 ? 11 : month - 1;
+    const lastDayPrev = new Date(prevMonthYear, prevMonthNum + 1, 0).getDate();
+    const prevMonthStr = String(prevMonthNum + 1).padStart(2, "0");
+    const lastDayStr = `${prevMonthYear}-${prevMonthStr}-${String(lastDayPrev).padStart(2, "0")}`;
+    map.set(lastDayStr, loadDay(lastDayStr));
     setData(map);
 
     // Open today's card by default
@@ -718,6 +723,15 @@ export default function HabitTracker() {
     setMonth(now.getMonth());
   };
 
+  const saveAll = useCallback(() => {
+    data.forEach((dayData) => {
+      saveDay(dayData);
+    });
+    setShowSaved(true);
+    if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+    savedTimerRef.current = setTimeout(() => setShowSaved(false), 1500);
+  }, [data]);
+
   if (!mounted) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -729,6 +743,22 @@ export default function HabitTracker() {
   const days = getDaysInMonth(year, month);
   const dayDataList = days.map((d) => data.get(d) || createEmptyDay(d));
 
+  // Get previous month's last day key for sleep calc
+  const prevMonthYear = month === 0 ? year - 1 : year;
+  const prevMonthNum = month === 0 ? 11 : month - 1;
+  const lastDayPrev = new Date(prevMonthYear, prevMonthNum + 1, 0).getDate();
+  const prevMonthLastDayKey = `${prevMonthYear}-${String(prevMonthNum + 1).padStart(2, "0")}-${String(lastDayPrev).padStart(2, "0")}`;
+
+  const getPrevBedtime = (idx: number): string => {
+    if (idx > 0) {
+      const prevDay = data.get(days[idx - 1]) || createEmptyDay(days[idx - 1]);
+      return prevDay.bedtime;
+    }
+    // First day of month — use last day of previous month
+    const prevMonthDay = data.get(prevMonthLastDayKey);
+    return prevMonthDay?.bedtime || "";
+  };
+
   const isCurrentMonth =
     year === new Date().getFullYear() && month === new Date().getMonth();
 
@@ -739,9 +769,18 @@ export default function HabitTracker() {
       {/* Header */}
       <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border/30">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-          <h1 className="text-lg font-semibold tracking-tight">
-            <span className="text-accent">Life</span> Tracker
-          </h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-lg font-semibold tracking-tight">
+              <span className="text-accent">Life</span> Tracker
+            </h1>
+            <button
+              onClick={saveAll}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent/20 text-accent hover:bg-accent/30 transition-colors text-xs font-medium cursor-pointer border border-accent/30"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+              Save
+            </button>
+          </div>
           <div className="flex items-center gap-2">
             <button
               onClick={prevMonth}
@@ -769,18 +808,17 @@ export default function HabitTracker() {
 
       <main className="max-w-7xl mx-auto px-4 py-4">
         {/* Summary */}
-        <MonthSummary days={dayDataList} />
+        <MonthSummary days={dayDataList} prevMonthBedtime={data.get(prevMonthLastDayKey)?.bedtime || ""} />
 
         {/* Mobile: Card layout */}
         <div className="md:hidden space-y-2">
           {days.map((date, idx) => {
             const dayData = data.get(date) || createEmptyDay(date);
-            const prevDay = idx > 0 ? (data.get(days[idx - 1]) || createEmptyDay(days[idx - 1])) : null;
             return (
               <DayCard
                 key={date}
                 data={dayData}
-                prevBedtime={prevDay?.bedtime || ""}
+                prevBedtime={getPrevBedtime(idx)}
                 isOpen={openCards.has(date)}
                 onToggle={() => toggleCard(date)}
                 onUpdate={updateDay}
@@ -809,9 +847,6 @@ export default function HabitTracker() {
                 <th className="px-3 py-2 text-[10px] uppercase tracking-wider text-muted font-medium text-center">
                   Aff
                 </th>
-                <th className="px-2 py-2 text-[10px] uppercase tracking-wider text-muted font-medium">
-                  Food
-                </th>
                 <th className="px-1 py-2 text-[10px] uppercase tracking-wider text-muted font-medium">
                   Bed
                 </th>
@@ -820,6 +855,9 @@ export default function HabitTracker() {
                 </th>
                 <th className="px-2 py-2 text-[10px] uppercase tracking-wider text-muted font-medium">
                   Sleep
+                </th>
+                <th className="px-2 py-2 text-[10px] uppercase tracking-wider text-muted font-medium">
+                  Food
                 </th>
                 <th className="px-2 py-2 text-[10px] uppercase tracking-wider text-muted font-medium">
                   Mood
@@ -832,12 +870,11 @@ export default function HabitTracker() {
             <tbody>
               {days.map((date, idx) => {
                 const dayData = data.get(date) || createEmptyDay(date);
-                const prevDay = idx > 0 ? (data.get(days[idx - 1]) || createEmptyDay(days[idx - 1])) : null;
                 return (
                   <DayRow
                     key={date}
                     data={dayData}
-                    prevBedtime={prevDay?.bedtime || ""}
+                    prevBedtime={getPrevBedtime(idx)}
                     onUpdate={updateDay}
                   />
                 );

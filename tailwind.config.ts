@@ -9,10 +9,10 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        background: "#0a0a0f",
-        surface: "#12121a",
-        "surface-light": "#1a1a26",
-        border: "#2a2a3a",
+        background: "#000000",
+        surface: "#0c0c0c",
+        "surface-light": "#141414",
+        border: "#262626",
         accent: "#6366f1",
         "accent-light": "#818cf8",
         "accent-glow": "rgba(99, 102, 241, 0.3)",

@@ -242,9 +242,9 @@ function DayCard({
             {sleep !== null ? `${sleep.toFixed(1)}h` : "—"}
           </span>
           <div className="flex gap-1 shrink-0">
-            <div className="w-5 h-5 rounded-full border border-border/50 shrink-0" style={{ backgroundColor: getScoreColorHex(data.food) }} title="Food" />
-            <div className="w-5 h-5 rounded-full border border-border/50 shrink-0" style={{ backgroundColor: getScoreColorHex(data.mood) }} title="Mood" />
-            <div className="w-5 h-5 rounded-full border border-border/50 shrink-0" style={{ backgroundColor: getScoreColorHex(data.work) }} title="Work" />
+            <div className="w-5 h-5 rounded-full border-2 bg-transparent shrink-0" style={{ borderColor: getScoreColorHex(data.food) }} title="Food" />
+            <div className="w-5 h-5 rounded-full border-2 bg-transparent shrink-0" style={{ borderColor: getScoreColorHex(data.mood) }} title="Mood" />
+            <div className="w-5 h-5 rounded-full border-2 bg-transparent shrink-0" style={{ borderColor: getScoreColorHex(data.work) }} title="Work" />
           </div>
           <svg
             width="16"
@@ -738,6 +738,26 @@ export default function HabitTracker() {
     }
   }, [year, month]);
 
+  // Sync from GitHub on mount (if configured)
+  useEffect(() => {
+    if (!mounted) return;
+    fetch("/api/habits")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((payload: { days?: Record<string, DayData> } | null) => {
+        const days = payload?.days;
+        if (!days || typeof days !== "object") return;
+        setData((prev) => {
+          const next = new Map(prev);
+          for (const [date, dayData] of Object.entries(days)) {
+            next.set(date, dayData as DayData);
+            saveDay(dayData as DayData);
+          }
+          return next;
+        });
+      })
+      .catch(() => {});
+  }, [mounted]);
+
   const updateDay = useCallback(
     (dayData: DayData) => {
       setData((prev) => {
@@ -798,6 +818,12 @@ export default function HabitTracker() {
     setShowSaved(true);
     if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
     savedTimerRef.current = setTimeout(() => setShowSaved(false), 1500);
+    // Sync to GitHub (if configured)
+    fetch("/api/habits", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ days: Object.fromEntries(data.entries()) }),
+    }).catch(() => {});
   }, [data]);
 
   if (!mounted) {

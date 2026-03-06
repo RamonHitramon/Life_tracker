@@ -65,26 +65,26 @@ export function getThumbColor(value: number): string {
   return getScoreColorHex(value);
 }
 
-/** Smooth 10-shade scale 0–100: red → orange → yellow → green (hex) */
+/** 0% red, 50% yellow, 100% green (hex) */
 export function getScoreColorHex(value: number): string {
   const t = Math.max(0, Math.min(100, value)) / 100;
-  // 10 stops: red → orange → yellow → lime → green
   const stops: [number, number, number][] = [
     [239, 68, 68],   // 0   red
-    [249, 115, 22],  // 1   orange
-    [234, 179, 8],   // 2   yellow
-    [202, 138, 4],   // 3   amber
-    [132, 204, 22],  // 4   lime
-    [74, 222, 128],  // 5   green
-    [34, 197, 94],   // 6   emerald
-    [16, 185, 129],  // 7
-    [20, 184, 166],  // 8   teal
-    [45, 212, 191],  // 9   emerald-teal
+    [234, 179, 8],   // 50  yellow
+    [34, 197, 94],   // 100 green
   ];
-  const i = t * (stops.length - 1);
-  const i0 = Math.floor(i);
-  const i1 = Math.min(i0 + 1, stops.length - 1);
-  const u = i - i0;
+  let i0: number;
+  let i1: number;
+  let u: number;
+  if (t <= 0.5) {
+    i0 = 0;
+    i1 = 1;
+    u = t * 2;
+  } else {
+    i0 = 1;
+    i1 = 2;
+    u = (t - 0.5) * 2;
+  }
   const r = Math.round(stops[i0][0] + (stops[i1][0] - stops[i0][0]) * u);
   const g = Math.round(stops[i0][1] + (stops[i1][1] - stops[i0][1]) * u);
   const b = Math.round(stops[i0][2] + (stops[i1][2] - stops[i0][2]) * u);

@@ -13,7 +13,7 @@ html {
 }
 
 body {
-  background: #0a0a0f;
+  background: #000000;
   color: #e2e2e8;
   font-family: 'Inter', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -24,10 +24,10 @@ body {
   height: 4px;
 }
 ::-webkit-scrollbar-track {
-  background: #0a0a0f;
+  background: #000000;
 }
 ::-webkit-scrollbar-thumb {
-  background: #2a2a3a;
+  background: #262626;
   border-radius: 2px;
 }
 

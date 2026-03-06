@@ -207,17 +207,6 @@ function DayCard({
   const sleep = calculateSleep(data.bedtime, data.waketime);
   const totalPushups = data.pushups.reduce((a, b) => a + b, 0);
 
-  const dots = [
-    totalPushups > 0,
-    data.meditation,
-    data.affirmations,
-    data.food > 0,
-    sleep !== null,
-    data.mood > 0,
-    data.work > 0,
-  ];
-  const filledCount = dots.filter(Boolean).length;
-
   return (
     <div
       className={`rounded-xl border transition-all duration-200 ${
@@ -476,49 +465,15 @@ function DayRow({
 
 // ─── Month summary ───
 function MonthSummary({ days, dayDataList }: { days: string[]; dayDataList: DayData[] }) {
-  const totalPushups = dayDataList.reduce(
-    (sum, d) => sum + d.pushups.reduce((a, b) => a + b, 0),
-    0
-  );
-
   // Sleep per day: same-day bed and wake
   const sleepPerDay: (number | null)[] = dayDataList.map((d) =>
     calculateSleep(d.bedtime, d.waketime)
   );
 
-  const today = new Date();
-  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-
-  let meditationStreak = 0;
-  const sortedDays = [...dayDataList].sort((a, b) => b.date.localeCompare(a.date));
-  for (const d of sortedDays) {
-    if (d.date > todayStr) continue;
-    if (d.meditation) meditationStreak++;
-    else break;
-  }
-
-  let affirmationStreak = 0;
-  for (const d of sortedDays) {
-    if (d.date > todayStr) continue;
-    if (d.affirmations) affirmationStreak++;
-    else break;
-  }
-
   const sleepDays: number[] = sleepPerDay.filter((h): h is number => h !== null);
   const avgSleep = sleepDays.length > 0
     ? sleepDays.reduce((a, b) => a + b, 0) / sleepDays.length
     : null;
-
-  const activeDays = dayDataList.filter((d) => d.date <= todayStr);
-  const avgMood = activeDays.length > 0
-    ? activeDays.reduce((s, d) => s + d.mood, 0) / activeDays.length
-    : 0;
-  const avgFood = activeDays.length > 0
-    ? activeDays.reduce((s, d) => s + d.food, 0) / activeDays.length
-    : 0;
-  const avgWork = activeDays.length > 0
-    ? activeDays.reduce((s, d) => s + d.work, 0) / activeDays.length
-    : 0;
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
@@ -581,7 +536,7 @@ function PushupsLineCard({ days, dayDataList }: { days: string[]; dayDataList: D
 }
 
 // ─── Meditation dots card (one dot per day: filled / outline), evenly distributed, large ───
-function MeditationDotsCard({ days, dayDataList }: { days: string[]; dayDataList: DayData[] }) {
+function MeditationDotsCard({ dayDataList }: { days: string[]; dayDataList: DayData[] }) {
   const cols = 7;
   return (
     <div className="bg-surface border border-border/50 rounded-xl p-3 min-h-[88px] flex flex-col">
@@ -608,7 +563,7 @@ function MeditationDotsCard({ days, dayDataList }: { days: string[]; dayDataList
 }
 
 // ─── Affirmation dots card (evenly distributed, large) ───
-function AffirmationDotsCard({ days, dayDataList }: { days: string[]; dayDataList: DayData[] }) {
+function AffirmationDotsCard({ dayDataList }: { days: string[]; dayDataList: DayData[] }) {
   const cols = 7;
   return (
     <div className="bg-surface border border-border/50 rounded-xl p-3 min-h-[88px] flex flex-col">
@@ -685,7 +640,6 @@ function SleepLineCard({ days, sleepPerDay, avgSleep }: { days: string[]; sleepP
 // ─── Score equalizer card (Mood / Food / Work): vertical bars, no dots, 10-shade color ───
 function ScoreEqualizerCard({
   label,
-  days,
   dayDataList,
   getValue,
 }: {
@@ -717,7 +671,7 @@ function ScoreEqualizerCard({
         </span>
       </div>
       <div className="flex-1 min-h-[52px] w-full flex items-end gap-0.5">
-        {dayDataList.map((d, i) => {
+        {dayDataList.map((d) => {
           const rawPct = getValue(d);
           const pct = rawPct === 50 && isDayUnchanged(d) ? 0 : rawPct;
           const h = (pct / 100) * maxH;
@@ -743,30 +697,6 @@ function ScoreEqualizerCard({
           );
         })}
       </div>
-    </div>
-  );
-}
-
-function StatCard({
-  label,
-  value,
-  sub,
-  color,
-}: {
-  label: string;
-  value: string;
-  sub: string;
-  color?: string;
-}) {
-  return (
-    <div className="bg-surface border border-border/50 rounded-xl p-3">
-      <div className="text-[10px] uppercase tracking-wider text-muted mb-1">
-        {label}
-      </div>
-      <div className={`text-xl font-mono font-semibold ${color || "text-foreground"}`}>
-        {value}
-      </div>
-      <div className="text-[10px] text-muted">{sub}</div>
     </div>
   );
 }

@@ -92,6 +92,7 @@ export function getScoreColorHex(value: number): string {
 }
 
 export function getScoreColor(value: number): string {
+  void value; // kept for API compatibility
   return "text-foreground"; // text color now via inline style or keep for fallback
 }
 
@@ -102,6 +103,7 @@ export function getScoreBg(value: number): string {
 }
 
 export function getScoreTrack(value: number): string {
+  void value; // kept for API compatibility
   return "bg-muted/40"; // pale track
 }
 

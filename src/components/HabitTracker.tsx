@@ -6,14 +6,13 @@ import {
   createEmptyDay,
   calculateSleep,
   getSleepColor,
-  getScoreColor,
-  getScoreBg,
-  getScoreTrack,
+  getScoreColorHex,
   getThumbColor,
   formatDate,
   getDaysInMonth,
   isToday,
   getMonthName,
+  isDayUnchanged,
 } from "@/lib/types";
 import { loadDay, saveDay } from "@/lib/storage";
 
@@ -80,21 +79,8 @@ function Slider({
       </div>
       <div className="relative h-6 flex items-center">
         <div
-          className="absolute my-auto h-2 rounded-full"
-          style={{
-            left: 0, right: 0, top: "50%", transform: "translateY(-50%)",
-            background: "linear-gradient(to right, #f87171, #fbbf24, #34d399)",
-            opacity: 0.2,
-          }}
-        />
-        <div
-          className="absolute left-0 my-auto h-2 rounded-l-full transition-all"
-          style={{
-            width: `${value}%`, top: "50%", transform: "translateY(-50%)",
-            background: `linear-gradient(to right, #f87171, #fbbf24 50%, #34d399)`,
-            backgroundSize: `${10000 / Math.max(value, 1)}% 100%`,
-            borderRadius: value >= 99 ? "9999px" : "9999px 0 0 9999px",
-          }}
+          className="absolute my-auto h-2 rounded-full left-0 right-0 bg-muted/40"
+          style={{ top: "50%", transform: "translateY(-50%)" }}
         />
         <input
           type="range"
@@ -158,17 +144,15 @@ function PushupInputs({
 function SleepInputs({
   bedtime,
   waketime,
-  prevBedtime,
   onBedtimeChange,
   onWaketimeChange,
 }: {
   bedtime: string;
   waketime: string;
-  prevBedtime: string;
   onBedtimeChange: (v: string) => void;
   onWaketimeChange: (v: string) => void;
 }) {
-  const hours = calculateSleep(prevBedtime, waketime);
+  const hours = calculateSleep(bedtime, waketime);
   const color = getSleepColor(hours);
 
   return (
@@ -210,19 +194,17 @@ function SleepInputs({
 // ─── Day card (mobile) ───
 function DayCard({
   data,
-  prevBedtime,
   isOpen,
   onToggle,
   onUpdate,
 }: {
   data: DayData;
-  prevBedtime: string;
   isOpen: boolean;
   onToggle: () => void;
   onUpdate: (d: DayData) => void;
 }) {
   const today = isToday(data.date);
-  const sleep = calculateSleep(prevBedtime, data.waketime);
+  const sleep = calculateSleep(data.bedtime, data.waketime);
   const totalPushups = data.pushups.reduce((a, b) => a + b, 0);
 
   const dots = [
@@ -247,34 +229,34 @@ function DayCard({
       <button
         type="button"
         onClick={onToggle}
-        className="w-full flex items-center justify-between px-4 py-3 min-h-[52px] cursor-pointer select-none"
+        className="w-full flex items-center justify-between gap-2 px-4 py-3 min-h-[52px] cursor-pointer select-none"
       >
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 min-w-0">
           <span
-            className={`font-mono text-sm font-medium ${
+            className={`font-mono text-sm font-medium shrink-0 ${
               today ? "text-accent-light" : "text-foreground"
             }`}
           >
             {formatDate(data.date)}
           </span>
           {today && (
-            <span className="text-[10px] font-medium uppercase tracking-wider text-accent bg-accent/10 px-1.5 py-0.5 rounded">
+            <span className="text-[10px] font-medium uppercase tracking-wider text-accent bg-accent/10 px-1.5 py-0.5 rounded shrink-0">
               Today
             </span>
           )}
         </div>
-        <div className="flex items-center gap-2">
-          <div className="flex gap-1">
-            {dots.map((filled, i) => (
-              <div
-                key={i}
-                className={`w-1.5 h-1.5 rounded-full transition-colors ${
-                  filled ? "bg-accent" : "bg-border"
-                }`}
-              />
-            ))}
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="text-xs font-mono text-accent-light tabular-nums">{totalPushups || "0"}</span>
+          <div className={`w-6 h-6 rounded-full border-2 flex shrink-0 ${data.meditation ? "bg-accent border-accent" : "border-border bg-transparent"}`} title="Meditation" />
+          <div className={`w-6 h-6 rounded-full border-2 flex shrink-0 ${data.affirmations ? "bg-accent border-accent" : "border-border bg-transparent"}`} title="Affirmation" />
+          <span className="text-xs font-mono text-foreground/80 tabular-nums min-w-[2.5rem]">
+            {sleep !== null ? `${sleep.toFixed(1)}h` : "—"}
+          </span>
+          <div className="flex gap-1 shrink-0">
+            <div className="w-5 h-5 rounded-full border border-border/50 shrink-0" style={{ backgroundColor: getScoreColorHex(data.food) }} title="Food" />
+            <div className="w-5 h-5 rounded-full border border-border/50 shrink-0" style={{ backgroundColor: getScoreColorHex(data.mood) }} title="Mood" />
+            <div className="w-5 h-5 rounded-full border border-border/50 shrink-0" style={{ backgroundColor: getScoreColorHex(data.work) }} title="Work" />
           </div>
-          <span className="text-[10px] text-muted font-mono">{filledCount}/7</span>
           <svg
             width="16"
             height="16"
@@ -323,7 +305,6 @@ function DayCard({
             <SleepInputs
               bedtime={data.bedtime}
               waketime={data.waketime}
-              prevBedtime={prevBedtime}
               onBedtimeChange={(bedtime) => onUpdate({ ...data, bedtime })}
               onWaketimeChange={(waketime) => onUpdate({ ...data, waketime })}
             />
@@ -351,21 +332,8 @@ function GradientSlider({ value, onChange }: { value: number; onChange: (v: numb
   return (
     <div className="relative min-w-[120px] h-6 flex items-center">
       <div
-        className="absolute my-auto h-2 rounded-full"
-        style={{
-          left: 0, right: 0, top: "50%", transform: "translateY(-50%)",
-          background: "linear-gradient(to right, #f87171, #fbbf24, #34d399)",
-          opacity: 0.2,
-        }}
-      />
-      <div
-        className="absolute left-0 my-auto h-2 rounded-l-full transition-all"
-        style={{
-          width: `${value}%`, top: "50%", transform: "translateY(-50%)",
-          background: `linear-gradient(to right, #f87171, #fbbf24 50%, #34d399)`,
-          backgroundSize: `${10000 / Math.max(value, 1)}% 100%`,
-          borderRadius: value >= 99 ? "9999px" : "9999px 0 0 9999px",
-        }}
+        className="absolute my-auto h-2 rounded-full left-0 right-0 bg-muted/40"
+        style={{ top: "50%", transform: "translateY(-50%)" }}
       />
       <input
         type="range"
@@ -383,15 +351,13 @@ function GradientSlider({ value, onChange }: { value: number; onChange: (v: numb
 // ─── Desktop table row ───
 function DayRow({
   data,
-  prevBedtime,
   onUpdate,
 }: {
   data: DayData;
-  prevBedtime: string;
   onUpdate: (d: DayData) => void;
 }) {
   const today = isToday(data.date);
-  const sleep = calculateSleep(prevBedtime, data.waketime);
+  const sleep = calculateSleep(data.bedtime, data.waketime);
   const sleepColor = getSleepColor(sleep);
   const totalPushups = data.pushups.reduce((a, b) => a + b, 0);
 
@@ -509,18 +475,22 @@ function DayRow({
 }
 
 // ─── Month summary ───
-function MonthSummary({ days, prevMonthBedtime }: { days: DayData[]; prevMonthBedtime: string }) {
-  const totalPushups = days.reduce(
+function MonthSummary({ days, dayDataList }: { days: string[]; dayDataList: DayData[] }) {
+  const totalPushups = dayDataList.reduce(
     (sum, d) => sum + d.pushups.reduce((a, b) => a + b, 0),
     0
   );
 
-  // Calculate streaks
+  // Sleep per day: same-day bed and wake
+  const sleepPerDay: (number | null)[] = dayDataList.map((d) =>
+    calculateSleep(d.bedtime, d.waketime)
+  );
+
   const today = new Date();
   const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
 
   let meditationStreak = 0;
-  const sortedDays = [...days].sort((a, b) => b.date.localeCompare(a.date));
+  const sortedDays = [...dayDataList].sort((a, b) => b.date.localeCompare(a.date));
   for (const d of sortedDays) {
     if (d.date > todayStr) continue;
     if (d.meditation) meditationStreak++;
@@ -534,20 +504,12 @@ function MonthSummary({ days, prevMonthBedtime }: { days: DayData[]; prevMonthBe
     else break;
   }
 
-  const sleepDays: number[] = [];
-  for (let i = 0; i < days.length; i++) {
-    const prevBed = i === 0 ? prevMonthBedtime : days[i - 1].bedtime;
-    const curWake = days[i].waketime;
-    if (prevBed && curWake) {
-      const h = calculateSleep(prevBed, curWake);
-      if (h !== null) sleepDays.push(h);
-    }
-  }
+  const sleepDays: number[] = sleepPerDay.filter((h): h is number => h !== null);
   const avgSleep = sleepDays.length > 0
     ? sleepDays.reduce((a, b) => a + b, 0) / sleepDays.length
     : null;
 
-  const activeDays = days.filter((d) => d.date <= todayStr);
+  const activeDays = dayDataList.filter((d) => d.date <= todayStr);
   const avgMood = activeDays.length > 0
     ? activeDays.reduce((s, d) => s + d.mood, 0) / activeDays.length
     : 0;
@@ -560,26 +522,227 @@ function MonthSummary({ days, prevMonthBedtime }: { days: DayData[]; prevMonthBe
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-      <StatCard label="Push-ups" value={String(totalPushups)} sub="total reps" />
-      <StatCard
-        label="Meditation"
-        value={String(meditationStreak)}
-        sub="day streak"
-      />
-      <StatCard
-        label="Affirmations"
-        value={String(affirmationStreak)}
-        sub="day streak"
-      />
-      <StatCard
-        label="Avg Sleep"
-        value={avgSleep !== null ? `${avgSleep.toFixed(1)}h` : "—"}
-        sub={avgSleep !== null ? "per night" : "no data"}
-        color={getSleepColor(avgSleep)}
-      />
-      <BarCard label="Avg Mood" value={Math.round(avgMood)} />
-      <BarCard label="Avg Food" value={Math.round(avgFood)} />
-      <BarCard label="Avg Work" value={Math.round(avgWork)} />
+      <PushupsLineCard days={days} dayDataList={dayDataList} />
+      <MeditationDotsCard days={days} dayDataList={dayDataList} />
+      <AffirmationDotsCard days={days} dayDataList={dayDataList} />
+      <SleepLineCard days={days} sleepPerDay={sleepPerDay} avgSleep={avgSleep} />
+      <ScoreEqualizerCard label="Avg Mood" days={days} dayDataList={dayDataList} getValue={(d) => d.mood} />
+      <ScoreEqualizerCard label="Food" days={days} dayDataList={dayDataList} getValue={(d) => d.food} />
+      <ScoreEqualizerCard label="Avg Work" days={days} dayDataList={dayDataList} getValue={(d) => d.work} />
+    </div>
+  );
+}
+
+// ─── Push-ups line chart card ───
+function PushupsLineCard({ days, dayDataList }: { days: string[]; dayDataList: DayData[] }) {
+  const totals = dayDataList.map((d) => d.pushups.reduce((a, b) => a + b, 0));
+  const maxY = Math.max(1, ...totals);
+  const w = 120;
+  const h = 48;
+  const pad = { left: 4, right: 4, top: 4, bottom: 4 };
+  const plotW = w - pad.left - pad.right;
+  const plotH = h - pad.top - pad.bottom;
+
+  const points: { x: number; y: number }[] = [];
+  totals.forEach((t, i) => {
+    if (t > 0) {
+      const x = pad.left + (days.length <= 1 ? 0 : (i / (days.length - 1)) * plotW);
+      const y = pad.top + plotH - (t / maxY) * plotH;
+      points.push({ x, y });
+    }
+  });
+
+  const pathD =
+    points.length > 0
+      ? points
+          .map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`)
+          .join(" ")
+      : "";
+
+  return (
+    <div className="bg-surface border border-border/50 rounded-xl p-3 min-h-[88px] flex flex-col">
+      <div className="text-[10px] uppercase tracking-wider text-muted mb-1">Push-ups</div>
+      <div className="flex-1 min-h-[52px] flex items-center justify-center">
+        <svg width="100%" height={h} viewBox={`0 0 ${w} ${h}`} className="text-accent" preserveAspectRatio="none">
+          {pathD && (
+            <>
+              <path d={pathD} fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              {points.map((p, i) => (
+                <circle key={i} cx={p.x} cy={p.y} r="2" fill="currentColor" />
+              ))}
+            </>
+          )}
+          {points.length === 0 && <text x={w / 2} y={h / 2} textAnchor="middle" className="text-[10px] fill-muted">—</text>}
+        </svg>
+      </div>
+      <div className="text-[10px] text-muted">total {totals.reduce((a, b) => a + b, 0)}</div>
+    </div>
+  );
+}
+
+// ─── Meditation dots card (one dot per day: filled / outline), evenly distributed, large ───
+function MeditationDotsCard({ days, dayDataList }: { days: string[]; dayDataList: DayData[] }) {
+  const cols = 7;
+  return (
+    <div className="bg-surface border border-border/50 rounded-xl p-3 min-h-[88px] flex flex-col">
+      <div className="text-[10px] uppercase tracking-wider text-muted mb-1">Meditation</div>
+      <div
+        className="flex-1 min-h-[52px] grid gap-0.5 place-items-stretch grid-auto-rows-1fr"
+        style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
+      >
+        {dayDataList.map((d) => (
+          <div key={d.date} className="aspect-square w-full min-h-0 flex justify-center items-center p-0.5">
+            <div
+              className={`w-full h-full rounded-full flex-shrink-0 ${
+                d.meditation ? "bg-accent" : "border border-border bg-transparent"
+              }`}
+              style={{ aspectRatio: "1", minWidth: 6, minHeight: 6 }}
+              title={formatDate(d.date)}
+            />
+          </div>
+        ))}
+      </div>
+      <div className="text-[10px] text-muted">{dayDataList.filter((d) => d.meditation).length} days</div>
+    </div>
+  );
+}
+
+// ─── Affirmation dots card (evenly distributed, large) ───
+function AffirmationDotsCard({ days, dayDataList }: { days: string[]; dayDataList: DayData[] }) {
+  const cols = 7;
+  return (
+    <div className="bg-surface border border-border/50 rounded-xl p-3 min-h-[88px] flex flex-col">
+      <div className="text-[10px] uppercase tracking-wider text-muted mb-1">Affirmation</div>
+      <div
+        className="flex-1 min-h-[52px] grid gap-0.5 place-items-stretch grid-auto-rows-1fr"
+        style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
+      >
+        {dayDataList.map((d) => (
+          <div key={d.date} className="aspect-square w-full min-h-0 flex justify-center items-center p-0.5">
+            <div
+              className={`w-full h-full rounded-full flex-shrink-0 ${
+                d.affirmations ? "bg-accent" : "border border-border bg-transparent"
+              }`}
+              style={{ aspectRatio: "1", minWidth: 6, minHeight: 6 }}
+              title={formatDate(d.date)}
+            />
+          </div>
+        ))}
+      </div>
+      <div className="text-[10px] text-muted">{dayDataList.filter((d) => d.affirmations).length} days</div>
+    </div>
+  );
+}
+
+// ─── Avg Sleep line chart card ───
+function SleepLineCard({ days, sleepPerDay, avgSleep }: { days: string[]; sleepPerDay: (number | null)[]; avgSleep: number | null }) {
+  const maxY = 12;
+  const w = 120;
+  const h = 48;
+  const pad = { left: 4, right: 4, top: 4, bottom: 4 };
+  const plotW = w - pad.left - pad.right;
+  const plotH = h - pad.top - pad.bottom;
+
+  const points: { x: number; y: number }[] = [];
+  sleepPerDay.forEach((hours, i) => {
+    if (hours !== null && hours > 0) {
+      const x = pad.left + (days.length <= 1 ? 0 : (i / (days.length - 1)) * plotW);
+      const y = pad.top + plotH - (Math.min(hours, maxY) / maxY) * plotH;
+      points.push({ x, y });
+    }
+  });
+
+  const pathD =
+    points.length > 0
+      ? points
+          .map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`)
+          .join(" ")
+      : "";
+
+  const colorClass = getSleepColor(avgSleep);
+
+  return (
+    <div className="bg-surface border border-border/50 rounded-xl p-3 min-h-[88px] flex flex-col">
+      <div className="text-[10px] uppercase tracking-wider text-muted mb-1">Avg Sleep</div>
+      <div className="flex-1 min-h-[52px] flex items-center justify-center">
+        <svg width="100%" height={h} viewBox={`0 0 ${w} ${h}`} className={colorClass} preserveAspectRatio="none">
+          {pathD && (
+            <>
+              <path d={pathD} fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              {points.map((p, i) => (
+                <circle key={i} cx={p.x} cy={p.y} r="2" fill="currentColor" />
+              ))}
+            </>
+          )}
+          {points.length === 0 && <text x={w / 2} y={h / 2} textAnchor="middle" className="text-[10px] fill-muted">—</text>}
+        </svg>
+      </div>
+      <div className={`text-[10px] ${colorClass}`}>{avgSleep !== null ? `${avgSleep.toFixed(1)}h` : "no data"}</div>
+    </div>
+  );
+}
+
+// ─── Score equalizer card (Mood / Food / Work): vertical bars, no dots, 10-shade color ───
+function ScoreEqualizerCard({
+  label,
+  days,
+  dayDataList,
+  getValue,
+}: {
+  label: string;
+  days: string[];
+  dayDataList: DayData[];
+  getValue: (d: DayData) => number;
+}) {
+  const maxH = 32;
+  const effectiveValues = dayDataList.map((d) => {
+    const v = getValue(d);
+    if (v === 50 && isDayUnchanged(d)) return null;
+    return v;
+  });
+  const modifiedOnly = effectiveValues.filter((v): v is number => v !== null);
+  const modifiedCount = modifiedOnly.length;
+  const avg =
+    modifiedCount > 0
+      ? Math.round(modifiedOnly.reduce((s, v) => s + v, 0) / modifiedCount)
+      : 0;
+  const avgColorHex = getScoreColorHex(avg);
+
+  return (
+    <div className="bg-surface border border-border/50 rounded-xl p-3 min-h-[88px] flex flex-col">
+      <div className="flex justify-between items-center mb-1">
+        <span className="text-[10px] uppercase tracking-wider text-muted">{label}</span>
+        <span className="text-sm font-mono font-medium" style={{ color: avgColorHex }}>
+          {modifiedCount > 0 ? `${avg}%` : "—"}
+        </span>
+      </div>
+      <div className="flex-1 min-h-[52px] w-full flex items-end gap-0.5">
+        {dayDataList.map((d, i) => {
+          const rawPct = getValue(d);
+          const pct = rawPct === 50 && isDayUnchanged(d) ? 0 : rawPct;
+          const h = (pct / 100) * maxH;
+          const barColor = getScoreColorHex(pct);
+          return (
+            <div
+              key={d.date}
+              className="flex-1 min-w-0 flex flex-col justify-end rounded-t"
+              style={{ height: `${maxH}px` }}
+              title={`${formatDate(d.date)}: ${rawPct}%`}
+            >
+              {pct > 0 && (
+                <div
+                  className="w-full rounded-t transition-all"
+                  style={{
+                    height: `${h}px`,
+                    minHeight: "2px",
+                    backgroundColor: barColor,
+                  }}
+                />
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -604,31 +767,6 @@ function StatCard({
         {value}
       </div>
       <div className="text-[10px] text-muted">{sub}</div>
-    </div>
-  );
-}
-
-function BarCard({ label, value }: { label: string; value: number }) {
-  const color = getScoreBg(value);
-  const track = getScoreTrack(value);
-  const textColor = getScoreColor(value);
-
-  return (
-    <div className="bg-surface border border-border/50 rounded-xl p-3">
-      <div className="flex justify-between items-center mb-2">
-        <span className="text-[10px] uppercase tracking-wider text-muted">
-          {label}
-        </span>
-        <span className={`text-sm font-mono font-medium ${textColor}`}>
-          {value}%
-        </span>
-      </div>
-      <div className={`h-1.5 rounded-full ${track}`}>
-        <div
-          className={`h-full rounded-full ${color} transition-all`}
-          style={{ width: `${value}%` }}
-        />
-      </div>
     </div>
   );
 }
@@ -743,22 +881,6 @@ export default function HabitTracker() {
   const days = getDaysInMonth(year, month);
   const dayDataList = days.map((d) => data.get(d) || createEmptyDay(d));
 
-  // Get previous month's last day key for sleep calc
-  const prevMonthYear = month === 0 ? year - 1 : year;
-  const prevMonthNum = month === 0 ? 11 : month - 1;
-  const lastDayPrev = new Date(prevMonthYear, prevMonthNum + 1, 0).getDate();
-  const prevMonthLastDayKey = `${prevMonthYear}-${String(prevMonthNum + 1).padStart(2, "0")}-${String(lastDayPrev).padStart(2, "0")}`;
-
-  const getPrevBedtime = (idx: number): string => {
-    if (idx > 0) {
-      const prevDay = data.get(days[idx - 1]) || createEmptyDay(days[idx - 1]);
-      return prevDay.bedtime;
-    }
-    // First day of month — use last day of previous month
-    const prevMonthDay = data.get(prevMonthLastDayKey);
-    return prevMonthDay?.bedtime || "";
-  };
-
   const isCurrentMonth =
     year === new Date().getFullYear() && month === new Date().getMonth();
 
@@ -808,17 +930,16 @@ export default function HabitTracker() {
 
       <main className="max-w-7xl mx-auto px-4 py-4">
         {/* Summary */}
-        <MonthSummary days={dayDataList} prevMonthBedtime={data.get(prevMonthLastDayKey)?.bedtime || ""} />
+        <MonthSummary days={days} dayDataList={dayDataList} />
 
         {/* Mobile: Card layout */}
         <div className="md:hidden space-y-2">
-          {days.map((date, idx) => {
+          {days.map((date) => {
             const dayData = data.get(date) || createEmptyDay(date);
             return (
               <DayCard
                 key={date}
                 data={dayData}
-                prevBedtime={getPrevBedtime(idx)}
                 isOpen={openCards.has(date)}
                 onToggle={() => toggleCard(date)}
                 onUpdate={updateDay}
@@ -868,13 +989,12 @@ export default function HabitTracker() {
               </tr>
             </thead>
             <tbody>
-              {days.map((date, idx) => {
+              {days.map((date) => {
                 const dayData = data.get(date) || createEmptyDay(date);
                 return (
                   <DayRow
                     key={date}
                     data={dayData}
-                    prevBedtime={getPrevBedtime(idx)}
                     onUpdate={updateDay}
                   />
                 );

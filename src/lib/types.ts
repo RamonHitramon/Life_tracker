@@ -24,6 +24,23 @@ export function createEmptyDay(date: string): DayData {
   };
 }
 
+/** True if day is still default (no user changes) */
+export function isDayUnchanged(d: DayData): boolean {
+  return (
+    d.pushups[0] === 0 &&
+    d.pushups[1] === 0 &&
+    d.pushups[2] === 0 &&
+    d.pushups[3] === 0 &&
+    !d.meditation &&
+    !d.affirmations &&
+    d.food === 50 &&
+    d.bedtime === "" &&
+    d.waketime === "" &&
+    d.mood === 50 &&
+    d.work === 50
+  );
+}
+
 export function calculateSleep(bedtime: string, waketime: string): number | null {
   if (!bedtime || !waketime) return null;
   const [bh, bm] = bedtime.split(":").map(Number);
@@ -45,15 +62,37 @@ export function getSleepColor(hours: number | null): string {
 }
 
 export function getThumbColor(value: number): string {
-  if (value <= 33) return "#f87171"; // red
-  if (value <= 66) return "#fbbf24"; // yellow/amber
-  return "#34d399"; // green
+  return getScoreColorHex(value);
+}
+
+/** Smooth 10-shade scale 0–100: red → orange → yellow → green (hex) */
+export function getScoreColorHex(value: number): string {
+  const t = Math.max(0, Math.min(100, value)) / 100;
+  // 10 stops: red → orange → yellow → lime → green
+  const stops: [number, number, number][] = [
+    [239, 68, 68],   // 0   red
+    [249, 115, 22],  // 1   orange
+    [234, 179, 8],   // 2   yellow
+    [202, 138, 4],   // 3   amber
+    [132, 204, 22],  // 4   lime
+    [74, 222, 128],  // 5   green
+    [34, 197, 94],   // 6   emerald
+    [16, 185, 129],  // 7
+    [20, 184, 166],  // 8   teal
+    [45, 212, 191],  // 9   emerald-teal
+  ];
+  const i = t * (stops.length - 1);
+  const i0 = Math.floor(i);
+  const i1 = Math.min(i0 + 1, stops.length - 1);
+  const u = i - i0;
+  const r = Math.round(stops[i0][0] + (stops[i1][0] - stops[i0][0]) * u);
+  const g = Math.round(stops[i0][1] + (stops[i1][1] - stops[i0][1]) * u);
+  const b = Math.round(stops[i0][2] + (stops[i1][2] - stops[i0][2]) * u);
+  return `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
 }
 
 export function getScoreColor(value: number): string {
-  if (value <= 40) return "text-red-400";
-  if (value <= 70) return "text-amber-400";
-  return "text-emerald-400";
+  return "text-foreground"; // text color now via inline style or keep for fallback
 }
 
 export function getScoreBg(value: number): string {
@@ -63,9 +102,7 @@ export function getScoreBg(value: number): string {
 }
 
 export function getScoreTrack(value: number): string {
-  if (value <= 40) return "bg-red-400/20";
-  if (value <= 70) return "bg-amber-400/20";
-  return "bg-emerald-400/20";
+  return "bg-muted/40"; // pale track
 }
 
 export function formatDate(dateStr: string): string {

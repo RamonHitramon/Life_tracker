@@ -44,6 +44,12 @@ export function getSleepColor(hours: number | null): string {
   return "text-blue-400";
 }
 
+export function getThumbColor(value: number): string {
+  if (value <= 33) return "#f87171"; // red
+  if (value <= 66) return "#fbbf24"; // yellow/amber
+  return "#34d399"; // green
+}
+
 export function getScoreColor(value: number): string {
   if (value <= 40) return "text-red-400";
   if (value <= 70) return "text-amber-400";

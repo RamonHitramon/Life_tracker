@@ -9,6 +9,7 @@ import {
   getScoreColor,
   getScoreBg,
   getScoreTrack,
+  getThumbColor,
   formatDate,
   getDaysInMonth,
   isToday,
@@ -72,7 +73,6 @@ function Slider({
   onChange: (v: number) => void;
   label: string;
 }) {
-  const color = getScoreColor(value);
   const bg = getScoreBg(value);
   const track = getScoreTrack(value);
 
@@ -80,12 +80,11 @@ function Slider({
     <div className="space-y-1.5">
       <div className="flex justify-between items-center">
         <span className="text-sm text-foreground/60">{label}</span>
-        <span className={`text-sm font-mono font-medium ${color}`}>{value}%</span>
       </div>
       <div className="relative h-6 flex items-center">
-        <div className={`absolute inset-0 my-auto h-1.5 rounded-full ${track}`} />
+        <div className={`absolute inset-0 my-auto h-2 rounded-full ${track}`} />
         <div
-          className={`absolute left-0 my-auto h-1.5 rounded-full ${bg} transition-all`}
+          className={`absolute left-0 my-auto h-2 rounded-full ${bg} transition-all`}
           style={{ width: `${value}%`, top: "50%", transform: "translateY(-50%)" }}
         />
         <input
@@ -94,8 +93,8 @@ function Slider({
           max={100}
           value={value}
           onChange={(e) => onChange(Number(e.target.value))}
-          className="relative z-10 w-full h-6 bg-transparent cursor-pointer"
-          style={{ background: "transparent" }}
+          className="relative z-10 w-full h-6 bg-transparent cursor-pointer color-slider"
+          style={{ background: "transparent", "--thumb-color": getThumbColor(value) } as React.CSSProperties}
         />
       </div>
     </div>
@@ -150,15 +149,17 @@ function PushupInputs({
 function SleepInputs({
   bedtime,
   waketime,
+  prevBedtime,
   onBedtimeChange,
   onWaketimeChange,
 }: {
   bedtime: string;
   waketime: string;
+  prevBedtime: string;
   onBedtimeChange: (v: string) => void;
   onWaketimeChange: (v: string) => void;
 }) {
-  const hours = calculateSleep(bedtime, waketime);
+  const hours = calculateSleep(prevBedtime, waketime);
   const color = getSleepColor(hours);
 
   return (
@@ -200,17 +201,19 @@ function SleepInputs({
 // ─── Day card (mobile) ───
 function DayCard({
   data,
+  prevBedtime,
   isOpen,
   onToggle,
   onUpdate,
 }: {
   data: DayData;
+  prevBedtime: string;
   isOpen: boolean;
   onToggle: () => void;
   onUpdate: (d: DayData) => void;
 }) {
   const today = isToday(data.date);
-  const sleep = calculateSleep(data.bedtime, data.waketime);
+  const sleep = calculateSleep(prevBedtime, data.waketime);
   const totalPushups = data.pushups.reduce((a, b) => a + b, 0);
 
   const dots = [
@@ -311,6 +314,7 @@ function DayCard({
             <SleepInputs
               bedtime={data.bedtime}
               waketime={data.waketime}
+              prevBedtime={prevBedtime}
               onBedtimeChange={(bedtime) => onUpdate({ ...data, bedtime })}
               onWaketimeChange={(waketime) => onUpdate({ ...data, waketime })}
             />
@@ -336,13 +340,15 @@ function DayCard({
 // ─── Desktop table row ───
 function DayRow({
   data,
+  prevBedtime,
   onUpdate,
 }: {
   data: DayData;
+  prevBedtime: string;
   onUpdate: (d: DayData) => void;
 }) {
   const today = isToday(data.date);
-  const sleep = calculateSleep(data.bedtime, data.waketime);
+  const sleep = calculateSleep(prevBedtime, data.waketime);
   const sleepColor = getSleepColor(sleep);
   const totalPushups = data.pushups.reduce((a, b) => a + b, 0);
 
@@ -422,19 +428,21 @@ function DayRow({
 
       {/* Food */}
       <td className="px-2 py-2">
-        <div className="flex items-center gap-2 min-w-[120px]">
+        <div className="relative min-w-[120px] h-6 flex items-center">
+          <div className={`absolute inset-0 my-auto h-2 rounded-full ${getScoreTrack(data.food)}`} />
+          <div
+            className={`absolute left-0 my-auto h-2 rounded-full ${getScoreBg(data.food)} transition-all`}
+            style={{ width: `${data.food}%`, top: "50%", transform: "translateY(-50%)" }}
+          />
           <input
             type="range"
             min={0}
             max={100}
             value={data.food}
             onChange={(e) => onUpdate({ ...data, food: Number(e.target.value) })}
-            className="flex-1 h-4"
-            style={{ background: "transparent" }}
+            className="relative z-10 w-full h-6 cursor-pointer color-slider"
+            style={{ background: "transparent", "--thumb-color": getThumbColor(data.food) } as React.CSSProperties}
           />
-          <span className={`font-mono text-xs w-8 text-right ${getScoreColor(data.food)}`}>
-            {data.food}
-          </span>
         </div>
       </td>
 
@@ -461,37 +469,41 @@ function DayRow({
 
       {/* Mood */}
       <td className="px-2 py-2">
-        <div className="flex items-center gap-2 min-w-[120px]">
+        <div className="relative min-w-[120px] h-6 flex items-center">
+          <div className={`absolute inset-0 my-auto h-2 rounded-full ${getScoreTrack(data.mood)}`} />
+          <div
+            className={`absolute left-0 my-auto h-2 rounded-full ${getScoreBg(data.mood)} transition-all`}
+            style={{ width: `${data.mood}%`, top: "50%", transform: "translateY(-50%)" }}
+          />
           <input
             type="range"
             min={0}
             max={100}
             value={data.mood}
             onChange={(e) => onUpdate({ ...data, mood: Number(e.target.value) })}
-            className="flex-1 h-4"
-            style={{ background: "transparent" }}
+            className="relative z-10 w-full h-6 cursor-pointer color-slider"
+            style={{ background: "transparent", "--thumb-color": getThumbColor(data.mood) } as React.CSSProperties}
           />
-          <span className={`font-mono text-xs w-8 text-right ${getScoreColor(data.mood)}`}>
-            {data.mood}
-          </span>
         </div>
       </td>
 
       {/* Work */}
       <td className="px-2 py-2">
-        <div className="flex items-center gap-2 min-w-[120px]">
+        <div className="relative min-w-[120px] h-6 flex items-center">
+          <div className={`absolute inset-0 my-auto h-2 rounded-full ${getScoreTrack(data.work)}`} />
+          <div
+            className={`absolute left-0 my-auto h-2 rounded-full ${getScoreBg(data.work)} transition-all`}
+            style={{ width: `${data.work}%`, top: "50%", transform: "translateY(-50%)" }}
+          />
           <input
             type="range"
             min={0}
             max={100}
             value={data.work}
             onChange={(e) => onUpdate({ ...data, work: Number(e.target.value) })}
-            className="flex-1 h-4"
-            style={{ background: "transparent" }}
+            className="relative z-10 w-full h-6 cursor-pointer color-slider"
+            style={{ background: "transparent", "--thumb-color": getThumbColor(data.work) } as React.CSSProperties}
           />
-          <span className={`font-mono text-xs w-8 text-right ${getScoreColor(data.work)}`}>
-            {data.work}
-          </span>
         </div>
       </td>
     </tr>
@@ -524,10 +536,15 @@ function MonthSummary({ days }: { days: DayData[] }) {
     else break;
   }
 
-  const sleepDays = days
-    .filter((d) => d.bedtime && d.waketime)
-    .map((d) => calculateSleep(d.bedtime, d.waketime))
-    .filter((h): h is number => h !== null);
+  const sleepDays: number[] = [];
+  for (let i = 1; i < days.length; i++) {
+    const prevBed = days[i - 1].bedtime;
+    const curWake = days[i].waketime;
+    if (prevBed && curWake) {
+      const h = calculateSleep(prevBed, curWake);
+      if (h !== null) sleepDays.push(h);
+    }
+  }
   const avgSleep = sleepDays.length > 0
     ? sleepDays.reduce((a, b) => a + b, 0) / sleepDays.length
     : null;
@@ -756,12 +773,14 @@ export default function HabitTracker() {
 
         {/* Mobile: Card layout */}
         <div className="md:hidden space-y-2">
-          {days.map((date) => {
+          {days.map((date, idx) => {
             const dayData = data.get(date) || createEmptyDay(date);
+            const prevDay = idx > 0 ? (data.get(days[idx - 1]) || createEmptyDay(days[idx - 1])) : null;
             return (
               <DayCard
                 key={date}
                 data={dayData}
+                prevBedtime={prevDay?.bedtime || ""}
                 isOpen={openCards.has(date)}
                 onToggle={() => toggleCard(date)}
                 onUpdate={updateDay}
@@ -811,12 +830,14 @@ export default function HabitTracker() {
               </tr>
             </thead>
             <tbody>
-              {days.map((date) => {
+              {days.map((date, idx) => {
                 const dayData = data.get(date) || createEmptyDay(date);
+                const prevDay = idx > 0 ? (data.get(days[idx - 1]) || createEmptyDay(days[idx - 1])) : null;
                 return (
                   <DayRow
                     key={date}
                     data={dayData}
+                    prevBedtime={prevDay?.bedtime || ""}
                     onUpdate={updateDay}
                   />
                 );

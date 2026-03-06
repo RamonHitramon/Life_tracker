@@ -63,6 +63,21 @@ input[type="range"]::-moz-range-thumb {
   box-shadow: 0 0 8px rgba(99, 102, 241, 0.4);
 }
 
+/* Dynamic color slider thumb */
+input[type="range"].color-slider::-webkit-slider-thumb {
+  background: var(--thumb-color, #6366f1);
+  border-color: var(--thumb-color, #818cf8);
+  box-shadow: 0 0 10px var(--thumb-color, rgba(99, 102, 241, 0.4));
+  transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+
+input[type="range"].color-slider::-moz-range-thumb {
+  background: var(--thumb-color, #6366f1);
+  border-color: var(--thumb-color, #818cf8);
+  box-shadow: 0 0 10px var(--thumb-color, rgba(99, 102, 241, 0.4));
+  transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+
 input[type="time"] {
   color-scheme: dark;
 }
